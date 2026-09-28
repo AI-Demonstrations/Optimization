@@ -1,3 +1,6 @@
+# Optimization
+Code to optimize models for both performance and resource usage
+
 # Metrics methods across various model types
 1) Supervised
 2) Unsupervised
