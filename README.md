@@ -1,6 +1,8 @@
 # Optimization
 Code to optimize models for both performance and resource usage
 
+Instructors: see [INSTRUCTOR_GUIDE.md](INSTRUCTOR_GUIDE.md) for a session plan, teaching notes per notebook, and assignment ideas.
+
 ## Setup
 ```bash
 python -m venv .venv && source .venv/bin/activate
