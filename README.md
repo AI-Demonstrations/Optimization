@@ -4,10 +4,12 @@ Code to optimize models for both performance and resource usage
 Instructors: see [INSTRUCTOR_GUIDE.md](INSTRUCTOR_GUIDE.md) for a session plan, teaching notes per notebook, and assignment ideas.
 
 ## Setup
+Requires **Python 3.12** (the pinned numpy, pandas and torch releases do not install on 3.9–3.11). Create a fresh venv for this folder rather than reusing an older shared one:
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python3.12 -m venv .venv && source .venv/bin/activate     # or: uv venv --python 3.12 .venv
 pip install -r requirements.txt
 ```
+Older NVIDIA GPUs (GTX 10xx / Pascal and earlier) are not supported by the default torch 2.15 CUDA wheels and fail with `no kernel image is available`. On such machines install the CPU build instead: `pip install --force-reinstall torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu`.
 All notebooks run on CPU; a GPU speeds up 7, 7B and 9. Run notebooks from this folder so relative `Data/` paths resolve.
 Notebooks 4, 6, 8 and `12LLMReview.py` download small Hugging Face models (GPT-2, OPT-125m, a sentence-embedding model), and 9 downloads ImageNet MobileNetV2 weights, on first run.
 

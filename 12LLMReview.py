@@ -14,8 +14,11 @@ Run from this folder:   python 12LLMReview.py
 The judge step calls the Claude API and needs credentials (ANTHROPIC_API_KEY or
 `ant auth login`) plus `pip install anthropic pydantic`; without them it is skipped.
 """
+import logging
 import math
 import warnings
+
+logging.getLogger("torchao").setLevel(logging.ERROR)  # transformers imports torchao; its GPU-only kernels fail to load on CPU
 
 import torch
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
@@ -32,8 +35,24 @@ JUDGE_MODEL = "claude-opus-5-5"
 
 
 # --- 1. Perplexity (intrinsic: needs no reference) --------------------------
+def pick_device():
+    """Use the GPU only if this torch build ships kernels for it (recent CUDA wheels
+    dropped older cards such as the GTX 10xx series, which then crash on first use)."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)  # torch warns about unsupported GPUs here
+        if not torch.cuda.is_available():
+            return "cpu"
+        major, minor = torch.cuda.get_device_capability(0)
+        supported = f"sm_{major}{minor}" in torch.cuda.get_arch_list()
+    if not supported:
+        print(f"GPU {torch.cuda.get_device_name(0)} (sm_{major}{minor}) is not supported "
+              f"by torch {torch.__version__}; using CPU.")
+        return "cpu"
+    return "cuda"
+
+
 def load_lm(model_id="gpt2"):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = pick_device()
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(model_id).to(device).eval()
     return tokenizer, model, device
@@ -127,8 +146,9 @@ def main():
         if judge is not None:
             try:
                 score, reasons[name] = judge(text, REFERENCE)
-            except TypeError:  # raised by the SDK when no credentials are configured
-                print("Judge skipped: set ANTHROPIC_API_KEY (or run `ant auth login`) to enable it.")
+            except TypeError as e:  # no credentials configured, or an anthropic SDK older than 2.x
+                print(f"Judge skipped ({e}).\n  Set ANTHROPIC_API_KEY (or run `ant auth login`) "
+                      "and make sure `anthropic~=2.3` is installed.")
                 judge = None
             except Exception as e:  # network/auth/rate-limit: keep the classroom demo running
                 print(f"Judge call failed ({e.__class__.__name__}: {e}); continuing without it.")
