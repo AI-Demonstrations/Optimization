@@ -3,6 +3,8 @@ Code to optimize models for both performance and resource usage
 
 Instructors: see [INSTRUCTOR_GUIDE.md](INSTRUCTOR_GUIDE.md) for a session plan, teaching notes per notebook, and assignment ideas.
 
+Metrics cheat sheet: [METRICS_REFERENCE.md](METRICS_REFERENCE.md) lists each metric with its formula, good/bad values and the result measured in the notebooks (data also in `metrics_reference.csv`).
+
 ## Setup
 Requires **Python 3.12** (the pinned numpy, pandas and torch releases do not install on 3.9–3.11). Create a fresh venv for this folder rather than reusing an older shared one:
 ```bash
