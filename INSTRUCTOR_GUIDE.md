@@ -90,18 +90,21 @@ The theme: every metric answers one narrow question, and a single number can loo
 - **The threshold table is the key exhibit.** At 0.5 there are 3 false alarms and 551 missed cases. At 0.1 there are 1,613 false alarms and 180 missed cases. Choosing between them is a business decision, not a modeling one.
 - **Regression part:** R² 0.453 vs. a mean-predictor baseline of −0.012. RMSE 53.9 is in the target's own units, which makes it easier to explain than MSE.
 - *Ask:* For a screening program, what does one missed case cost compared with one extra follow-up test? Which threshold follows from that?
+  - *Answer:* A missed case (undiagnosed diabetes, later complications) costs far more than a follow-up blood test, so the threshold should sit well below 0.5. Moving from 0.5 to 0.1 trades 1,610 extra false alarms for 371 fewer misses, so 0.1 wins whenever one miss costs more than about 4.3 follow-up tests (1,610 ÷ 371). In general, with calibrated probabilities the cost-minimizing threshold is C_FP / (C_FP + C_FN); if a miss costs 20 tests, that is about 0.05. Students should state the cost ratio first and then read the threshold off the table.
 
 ### 1B — Multi-class metrics (Iris)
 
 - 96.7% test accuracy, with one versicolor misread as virginica. Macro averaging and one-vs-rest ROC (AUC 0.997) are the new ideas.
 - Point out that the test set is only 30 rows, so one error moves accuracy by 3.3 points.
 - *Ask:* When would weighted averaging and macro averaging give very different answers?
+  - *Answer:* When classes are imbalanced *and* the model performs differently on them. Macro gives every class equal weight, so a rare class with poor recall pulls it down; weighted follows class frequency and hides that failure. Example: fraud at 1% with 20% recall gives a macro recall near 0.6 but a weighted recall near 0.99. Iris is balanced (10 per class in the test set), so the two averages nearly coincide here.
 
 ### 2 — Unsupervised metrics (clustering)
 
 - On synthetic blobs: silhouette 0.79, Davies-Bouldin 0.29, ARI 0.99. Silhouette and Davies-Bouldin agree that k = 4 is best.
 - Stress that inertia always falls as k grows, so it cannot choose k alone. ARI is only available because the data is synthetic and comes with true labels.
 - *Ask:* In a real customer-segmentation project with no labels, which of these metrics could you still use?
+  - *Answer:* The internal metrics, which need no labels: silhouette, Davies-Bouldin, and inertia (the latter only to compare k with the elbow, never on its own). ARI needs true labels, so it is out. In practice, also check that the clusters are stable across random seeds and resamples, that they can be described in business terms, and that they pay off downstream (for example, a targeted campaign beats an untargeted one).
 
 ### 3 and 3B — Reinforcement learning
 
@@ -109,6 +112,7 @@ The theme: every metric answers one narrow question, and a single number can loo
 - **Robustness is the memorable result.** The same policy on the slippery lake succeeds only 3.9% of the time.
 - **3B (CartPole):** the best checkpoint averages 500 (solved), but the final Q-table averages 96. Keep the best policy, as with early stopping. The Q-table grows as bins^variables, which motivates DQN.
 - *Ask:* What is the RL equivalent of a held-out test set?
+  - *Answer:* Running the final policy greedily (no exploration) on fresh episodes with new random seeds, separate from the episodes used to pick the checkpoint. A stronger test runs it on environment variations it never trained on. The slippery lake is exactly that kind of distribution-shift test, and the policy fails it (3.9%).
 
 ### 4 and `12LLMReview.py` — Generative metrics
 
@@ -116,6 +120,7 @@ The theme: every metric answers one narrow question, and a single number can loo
 - **`12LLMReview.py`** is the punchline. A sentence with the facts flipped ("the lazy brown dog jumps over the quick fox") gets ROUGE-1 = 1.0 and beats the correct paraphrase on BLEU (0.17 vs. 0.06). Only the LLM judge, which reads for meaning, ranks it last.
 - Run the script live with a key and have students predict the judge's scores before revealing them.
 - *Ask:* What are an LLM judge's own failure modes (cost, latency, bias toward longer or same-style answers), and how would you check the judge?
+  - *Answer:* Failure modes: each call costs money and adds latency; scores vary between runs and with prompt wording; judges favor longer, more confident, or same-model-style answers; in pairwise comparisons they favor one position; and they can miss subtle factual errors. To check it, have humans label a sample and measure agreement (Spearman correlation or Cohen's kappa), swap the answer order in pairwise prompts, repeat calls to measure variance, plant known-bad controls such as `wrong_fact`, score against an explicit rubric, and consider a judge from a different model family than the system being graded.
 
 ## Measuring cost
 
@@ -127,6 +132,7 @@ The theme: a timing number is only meaningful with its method stated (clock, war
 - **The batching result:** one prediction takes about 246 µs, but in a batch of 1,000 it costs about 0.39 µs per row, a 632× speed-up. Most of the single-call time is per-call overhead, not math.
 - Report the mean and spread over repeats (2.69 ms ± 0.10 ms), or let `timeit` / `%timeit` do the loop.
 - *Ask:* Why might the minimum of repeated runs be a better estimate of the code's cost than the mean?
+  - *Answer:* Noise such as OS scheduling, other processes, garbage collection, cache misses, and CPU frequency changes can only add time, never remove it. So the fastest run is closest to what the code itself costs, which is why the Python `timeit` docs recommend the minimum. Use the minimum to compare two versions of code; use the mean and percentiles to describe what users will actually experience.
 
 ### 10 — Latency, throughput, memory, profiling
 
@@ -136,6 +142,7 @@ The theme: a timing number is only meaningful with its method stated (clock, war
 - **Profiling:** `aten::addmm` (matrix multiply) takes about 96% of the time. `cProfile` does the same for any Python code, such as a scikit-learn pipeline.
 - On GPU, the `sync()` helper matters because GPU calls return before they finish. Without it the timings are wrong.
 - *Ask:* An online service needs p99 under 50 ms and a nightly batch job needs maximum throughput. What batch size would you pick for each?
+  - *Answer:* Online service: the largest batch whose p99 latency, *including the time spent waiting for the batch to fill*, stays under 50 ms. For this small model even batch 1 is about 0.1 ms, so batch 1 or dynamic batching with a short timeout is fine. Nightly job: latency doesn't matter, so pick the batch size where throughput levels off (32 or above in notebook 10, avoiding the dip at 512), limited by available memory. Either way, re-measure on the production hardware.
 
 ## Making models smaller
 
@@ -146,6 +153,7 @@ The theme: find where the parameters and compute actually are, apply one techniq
 - The "simplified" CNN is only 1.14× smaller (316k vs. 361k params). Dropping a pooling stage made its `Flatten` → `Dense` input larger. Count parameters; don't count layers.
 - Accuracy is nearly equal (68.5% vs. 68.1%) and single-image latency is 1.37× better, so the smaller model wins if it is within tolerance.
 - *Ask:* What accuracy loss would your project's users accept for a 2× speed-up?
+  - *Answer:* There is no universal number; the answer comes from requirements, not from the model. If latency already meets the requirement, a speed-up is worth little and any accuracy loss is too much. If it misses the requirement (a video frame budget, a phone, cost per request), a 1–2 point loss is often acceptable for consumer features, while safety-critical uses (medical, fraud) accept close to none. Good answers name the metric, the tolerance, and who decides. Notebook 7's trade (0.4 points for 1.37×) is the concrete example.
 
 ### 7B — Systematic reduction
 
@@ -186,6 +194,7 @@ The knee is the lesson: past global pooling, every further cut buys size with ac
 - int8 is about 2×, not 4×, smaller because the 40M-parameter embedding table is not an `nn.Linear` and stays float32.
 - The CPU speed results flip with hardware: bf16 is slow on CPUs without native support. Measure on the deployment target.
 - *Ask:* Which variant would you ship to a phone? Which to a CPU server? Which to a GPU?
+  - *Answer:* Phone: memory and storage are the limit, so ship the smallest variant with no quality loss, int8 weight-only (247 MB), or int8 weight-only + bf16 (166 MB) if the chip supports bf16. In practice this means int8/int4 through a mobile runtime. CPU server: on this CPU, int8 dynamic was the only faster option (1.63×), but perplexity rose about 15% (31.7 → 36.5); if quality matters, keep fp32 or test bf16 on CPUs with native bf16 (AVX-512 BF16/AMX). GPU: bfloat16, which tensor cores support natively, halves memory and leaves perplexity almost unchanged (31.77). Add int8 weight-only when memory bandwidth limits generation. The common lesson: benchmark on the target hardware.
 
 ### 9 — Transfer learning (MobileNetV2, cats vs. dogs)
 
@@ -193,6 +202,7 @@ The knee is the lesson: past global pooling, every further cut buys size with ac
 - **Data hygiene is part of the lesson.** The loader skips about 25,000 NAS thumbnail files and a Photoshop file named `.jpg`. Real data is messy, and silent bad inputs corrupt training.
 - Review the misclassified images in class; many are ambiguous or mislabeled.
 - *Ask:* When is fine-tuning worth its cost over training the head alone?
+  - *Answer:* When the target images differ from the pretraining data (X-rays, satellite, microscopy, industrial defects), when there is enough labeled data to update more weights without overfitting, and when head-only accuracy falls short of the requirement. Cats vs. dogs is close to ImageNet, so fine-tuning added only 0.3 points here, not worth the extra training compute or the risk of overwriting pretrained features. If you do fine-tune, use a low learning rate and unfreeze only the top layers.
 
 ## Common pitfalls and troubleshooting
 
