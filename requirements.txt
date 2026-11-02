@@ -1,0 +1,17 @@
+# Tested with Python 3.12 (November 2026). `~=X.Y` allows patch/minor updates within the tested release line.
+numpy~=2.5
+pandas~=3.1
+scikit-learn~=1.9
+matplotlib~=3.11
+tensorflow~=2.21      # notebooks 1, 1B, 7, 7B, 9
+torch~=2.15           # notebooks 4, 6, 8, 10; 12LLMReview.py
+torchao~=0.18         # notebooks 6, 8 (quantization)
+transformers~=5.22    # notebooks 4, 6, 8; 12LLMReview.py
+gymnasium~=1.4        # notebooks 3, 3B
+nltk~=3.10            # notebook 4, 12LLMReview.py (BLEU)
+rouge_score~=0.1.2    # notebook 4, 12LLMReview.py (ROUGE)
+jupyter
+
+# Optional: real LLM-as-a-judge in 12LLMReview.py (needs ANTHROPIC_API_KEY or `ant auth login`)
+anthropic~=2.3
+pydantic~=2.0
